@@ -39,7 +39,7 @@
     },
     {
         "comment": "点訳のてびき第3版 第4章 その2 4.",
-        "text": "“MODERN TIMES”",
+        "text": "MODERN TIMES",
         "input": "⠦MODERN TIMES⠴",
         "output": "⠦⠠⠠⠍⠕⠙⠑⠗⠝ ⠠⠠⠞⠊⠍⠑⠎⠴",
         "ueb_g2": "⠦⠠⠠⠍⠕⠙⠻⠝ ⠠⠠⠐⠞⠎⠴",
@@ -95,7 +95,7 @@
         "input": "⠦v1.4⠴",
         "output": "⠦⠧⠼⠁⠲⠙⠴",
         "ueb_g2": "⠦⠧⠼⠁⠲⠙⠴",
-        "us_g2": "⠦⠰⠧⠼⠁⠨⠙⠴"
+        "us_g2": "⠦⠧⠼⠁⠨⠙⠴"
     },
     {
         "text": "abc.123.jp",
