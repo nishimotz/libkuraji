@@ -12,7 +12,6 @@
 # nvdajp's mecabAnalyzer.py). The feature-line format, including the
 # optional braille-notation field, is part of that dictionary contract.
 
-import copy
 import re
 from typing import Callable
 
@@ -145,6 +144,13 @@ class MecabMorph(object):
 		self.output = ""
 		self.sepflag = False  # この後でマスアケをするか？
 
+	def clone(self) -> "MecabMorph":
+		# all slots hold immutable values, so attribute copy is enough
+		new = MecabMorph.__new__(MecabMorph)
+		for name in MecabMorph.__slots__:
+			setattr(new, name, getattr(self, name))
+		return new
+
 	# 付属語
 	def is_substantive_word(self) -> bool:
 		if self.hinshi1 == "記号":
@@ -251,7 +257,7 @@ def replace_morphs(li, dic):
 		if mo.hyouki in dic.keys():
 			new_morphs = dic[mo.hyouki]
 			for i in new_morphs:
-				m = copy.deepcopy(mo)
+				m = mo.clone()
 				m.hyouki = i[0]  # に
 				m.nhyouki = unicode_normalize(i[0])  # に
 				if i[3]:
@@ -340,7 +346,7 @@ def kansuji2arabic(text: str, logwrite: Callable[[str], None] | None = None) -> 
 def rewrite_number(li: list[MecabMorph], logwrite: Callable[[str], None] | None = None) -> list[MecabMorph]:
 	new_li: list[MecabMorph] = []
 	for mo in li:
-		m = copy.deepcopy(mo)
+		m = mo.clone()
 		if m.hinshi2 != "固有名詞":
 			flag, num = kansuji2arabic(m.hyouki, logwrite)
 			if flag == 1:
@@ -358,7 +364,7 @@ def rewrite_number(li: list[MecabMorph], logwrite: Callable[[str], None] | None 
 
 
 def concatinate_morphs(li: list[MecabMorph]) -> MecabMorph:
-	mo = copy.deepcopy(li[0])
+	mo = li[0].clone()
 	s = ""
 	y = ""
 	for i in li:
@@ -403,7 +409,7 @@ def replace_digit_morphs(li: list[MecabMorph]) -> list[MecabMorph]:
 		if mo.hinshi2 == "数" and mo.hyouki == "，" and num_morphs:
 			# カンマ
 			new_li.append(concatinate_morphs(num_morphs))
-			m = copy.deepcopy(mo)
+			m = mo.clone()
 			m.yomi = m.output = ","
 			new_li.append(concatinate_morphs([m]))
 			num_morphs = []
@@ -416,7 +422,7 @@ def replace_digit_morphs(li: list[MecabMorph]) -> list[MecabMorph]:
 			num_morphs.append(mo)
 		elif mo.hinshi2 == "数" and mo.hyouki in "０１２３４５６７８９":
 			# 算用数字の結合
-			m = copy.deepcopy(mo)
+			m = mo.clone()
 			y = unicode_normalize(m.hyouki)
 			m.output = m.hyouki = m.nhyouki = m.yomi = y
 			num_morphs.append(m)
@@ -584,7 +590,7 @@ def fix_japanese_date_morphs(li):
 				li[i].output = "カ"
 				new_li.append(li[i])
 			elif (prev2_mo is None or prev2_mo.hyouki != "、") and prev_mo.output in WAGO_DIC:
-				m = copy.deepcopy(mo)
+				m = mo.clone()
 				m.hyouki = prev_mo.hyouki + mo.hyouki
 				m.nhyouki = prev_mo.nhyouki + mo.nhyouki
 				m.output = WAGO_DIC[prev_mo.output]
