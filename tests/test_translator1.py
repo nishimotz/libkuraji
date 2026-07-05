@@ -18,11 +18,8 @@ def _load_cases(filename, mode_default=""):
     for idx, t in enumerate(data):
         if "input" not in t or "output" not in t:
             continue
-        case_id = "%s-%d" % (filename.split(".")[0], idx)
-        marks = []
-        if t.get("mode", mode_default) == "NABCC":
-            marks.append(pytest.mark.skip(reason="NABCC mode not implemented yet"))
-        cases.append(pytest.param(t, id=case_id, marks=marks))
+        t.setdefault("mode", mode_default)
+        cases.append(pytest.param(t, id="%s-%d" % (filename.split(".")[0], idx)))
     return cases
 
 

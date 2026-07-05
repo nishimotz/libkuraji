@@ -342,6 +342,38 @@ _TSUNAGI_KANA = set("アイウエオラリルレロ")
 # letters confusable with digits (a-j) need a foreign sign after numbers
 _DIGIT_LIKE_LETTERS = set("abcdefghij")
 
+# --- NABCC (North American Braille Computer Code) ---------------------
+# In NABCC mode every ASCII character maps directly to one cell:
+# lowercase letters use the standard patterns, capitals add dot 7,
+# digits are "dropped" (lowered) patterns without a numeric sign.
+
+_NABCC_DIGIT_DOTS = {
+    "1": (2,), "2": (2, 3), "3": (2, 5), "4": (2, 5, 6), "5": (2, 6),
+    "6": (2, 3, 5), "7": (2, 3, 5, 6), "8": (2, 3, 6), "9": (3, 5),
+    "0": (3, 5, 6),
+}
+
+_NABCC_SYMBOL_DOTS = {
+    ",": (6,), ";": (5, 6), ":": (1, 5, 6), ".": (4, 6),
+    "!": (2, 3, 4, 6), '"': (5,), "'": (3,), "(": (1, 2, 3, 5, 6),
+    ")": (2, 3, 4, 5, 6), "-": (3, 6), "_": (4, 5, 6), "<": (1, 2, 6),
+    "=": (1, 2, 3, 4, 5, 6), ">": (3, 4, 5), "%": (1, 4, 6),
+    "+": (3, 4, 6), "~": (4, 5), "`": (4,), "&": (1, 2, 3, 4, 6),
+    "$": (1, 2, 4, 6), "?": (1, 4, 5, 6), "{": (2, 4, 6),
+    "[": (2, 4, 6, 7), "}": (1, 2, 4, 5, 6), "]": (1, 2, 4, 5, 6, 7),
+    "^": (4, 5, 7), "@": (4, 7), "#": (3, 4, 5, 6), "\\": (1, 2, 5, 6, 7),
+    "|": (1, 2, 5, 6), "/": (3, 4), "*": (1, 6),
+}
+
+NABCC = {" ": " "}
+for _ch, _dots in _NABCC_DIGIT_DOTS.items():
+    NABCC[_ch] = _cell(*_dots)
+for _ch, _dots in _NABCC_SYMBOL_DOTS.items():
+    NABCC[_ch] = _cell(*_dots)
+for _ch, _braille in LATIN.items():
+    NABCC[_ch] = _braille
+    NABCC[_ch.upper()] = chr(ord(_braille) | 0x40)  # capital: dot 7
+
 # number punctuation: index by "inside quote/computer context"
 _NUMBER_COMMA = {False: _cell(3), True: _cell(2)}
 _NUMBER_POINT = {False: _cell(2), True: _cell(2, 5, 6)}
@@ -412,6 +444,11 @@ def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
             elif ch == _FOREIGN_CLOSE:
                 context = None
             emit(" " if ch == "⠀" else ch, i)
+            i += 1
+            continue
+
+        if nabcc and ch.isascii() and ch in NABCC:
+            emit(NABCC[ch], i)
             i += 1
             continue
 
