@@ -393,6 +393,8 @@ def _is_digit(ch: str) -> bool:
 
 def _normalize(text: str) -> str:
     """Fold halfwidth katakana (with voiced marks) into fullwidth."""
+    if not any("｡" <= ch <= "ﾟ" for ch in text):
+        return text
     chars: List[str] = []
     for ch in text:
         if 0xFF61 <= ord(ch) <= 0xFF9F:
@@ -408,21 +410,30 @@ def _normalize(text: str) -> str:
     return "".join(chars)
 
 
+# first characters of two-character kana sequences
+_KANA2_FIRST = frozenset(key[0] for key in KANA2)
+
+
 def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
     """Translate kana text into braille; return (cells, input positions)."""
     norm = _normalize(text)
-    out: List[str] = []
-    pos: List[int] = []
+    out: List[str] = []  # cell strings; joined at the end
+    pos: List[int] = []  # one entry per cell
     # quote context: None (kana), "computer" (dot-6 quote), "quote"
     context = None
     latin_active = False  # a foreign sign is still in effect (kana context)
     i = 0
     n = len(norm)
+    out_append = out.append
+    pos_append = pos.append
+    pos_extend = pos.extend
 
     def emit(cells: str, index: int) -> None:
-        for c in cells:
-            out.append(c)
-            pos.append(index)
+        out_append(cells)
+        if len(cells) == 1:
+            pos_append(index)
+        else:
+            pos_extend((index,) * len(cells))
 
     def prev_char() -> str:
         return norm[i - 1] if i > 0 else ""
@@ -437,6 +448,29 @@ def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
 
     while i < n:
         ch = norm[i]
+
+        # fast path: kana (the common case)
+        two = norm[i : i + 2] if ch in _KANA2_FIRST else ""
+        if two in KANA2 or ch in KANA1:
+            if latin_active:
+                latin_active = False
+            if i > 0 and _is_latin(norm[i - 1]):
+                emit(_TSUNAGI, i - 1)
+            if two in KANA2:
+                cells = KANA2[two]
+                emit(cells[0], i)
+                emit(cells[1:], i + 1)
+                i += 2
+            else:
+                emit(KANA1[ch], i)
+                i += 1
+            continue
+
+        if ch == " ":
+            emit(" ", i)
+            latin_active = False
+            i += 1
+            continue
 
         if _is_braille(ch):
             if ch == _FOREIGN_OPEN:
@@ -457,7 +491,7 @@ def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
         ):
             latin_active = False
             # numeric sign, unless a literal numeric sign cell precedes
-            if not (out and out[-1] == _NUMERIC_SIGN):
+            if not (out and out[-1].endswith(_NUMERIC_SIGN)):
                 emit(_NUMERIC_SIGN, i)
             if ch == "'":
                 # year abbreviation: apostrophe becomes dot 3 in a number
@@ -544,6 +578,14 @@ def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
 
         latin_active = False
 
+        if ch in _SENTENCE_PUNCT:
+            cells, pad = _SENTENCE_PUNCT[ch]
+            emit(cells, i)
+            if i + 1 < n:
+                emit(" " * pad, i)
+            i += 1
+            continue
+
         if ch in _LITERAL_SYMBOL:
             emit(_LITERAL_SYMBOL[ch], i)
             i += 1
@@ -554,32 +596,9 @@ def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
             i += 1
             continue
 
-        # kana (with connector after Latin letters)
-        two = norm[i : i + 2]
-        if two in KANA2 or ch in KANA1:
-            if _is_latin(prev_char()):
-                emit(_TSUNAGI, i - 1)
-            if two in KANA2:
-                cells = KANA2[two]
-                emit(cells[0], i)
-                emit(cells[1:], i + 1)
-                i += 2
-            else:
-                emit(KANA1[ch], i)
-                i += 1
-            continue
-
-        if ch in _SENTENCE_PUNCT:
-            cells, pad = _SENTENCE_PUNCT[ch]
-            emit(cells, i)
-            if i + 1 < n:
-                emit(" " * pad, i)
-            i += 1
-            continue
-
         if ch in _SPACED_SYMBOL:
             cells, before, after = _SPACED_SYMBOL[ch]
-            if before and out and out[-1] != " ":
+            if before and out and not out[-1].endswith(" "):
                 emit(" ", i)
             emit(cells, i)
             if after and i + 1 < n:
