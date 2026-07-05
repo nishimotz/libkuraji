@@ -1,0 +1,2 @@
+[console_scripts]
+kuraji = libkuraji.cli:main

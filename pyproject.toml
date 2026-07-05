@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libkuraji"
+version = "0.1.0.dev0"
+description = "Japanese Braille translator originally developed for NVDAJP"
+readme = "README.md"
+license = "BSD-3-Clause"
+authors = [{ name = "Takuya Nishimoto" }]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3",
+    "Topic :: Adaptive Technologies",
+]
+
+[project.urls]
+Homepage = "https://github.com/nishimotz/libkuraji"
+
+[project.scripts]
+kuraji = "libkuraji.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

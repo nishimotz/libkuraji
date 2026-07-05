@@ -1,0 +1,12 @@
+LICENSE
+pyproject.toml
+src/libkuraji/__init__.py
+src/libkuraji/cli.py
+src/libkuraji/kana.py
+src/libkuraji.egg-info/PKG-INFO
+src/libkuraji.egg-info/SOURCES.txt
+src/libkuraji.egg-info/dependency_links.txt
+src/libkuraji.egg-info/entry_points.txt
+src/libkuraji.egg-info/requires.txt
+src/libkuraji.egg-info/top_level.txt
+tests/test_translator1.py
