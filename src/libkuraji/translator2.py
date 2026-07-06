@@ -238,7 +238,13 @@ def mecab_to_morphs(feature_lines: list[str] | None) -> list[MecabMorph]:
 			if len(ar) > 9:
 				mo.kana = unicode_normalize(ar[8])  # "（ニチ）" -> "(ニチ)"
 				# ありがとうございますー,感動詞,*,*,*,*,*,ありがとうございますー,アリガトウゴザイマスー,アリガトーゴザイマス’ー,0/1,C0
-				mo.yomi = unicode_normalize(ar[9]).replace("’", "")
+				yomi_raw = unicode_normalize(ar[9])
+				# Strip accent markers (’) from Japanese phonetic readings (which contain Katakana),
+				# but preserve literal quote characters in punctuation/symbols.
+				if any(0x30a0 <= ord(c) <= 0x30ff for c in yomi_raw):
+					mo.yomi = yomi_raw.replace("’", "")
+				else:
+					mo.yomi = yomi_raw
 				mo.accent = ar[10]
 				if len(ar) > 12:
 					# Mecab辞書の拡張フィールドの点訳表記があれば使用する

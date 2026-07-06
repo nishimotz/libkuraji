@@ -26,3 +26,22 @@ jobs:
         run: kuraji "テンジ ホンヤク テスト"
         env:
           PYTHONUTF8: "1"
+
+  # Real-dictionary integration tests (Windows only).
+  # Fetches the JTalk dictionary binaries from the libkuraji-jtalk-dic
+  # GitHub Release and runs the harness/nabcc/eng2 cases plus the
+  # mecabFixture.json parity checks against a live MeCab.
+  integration:
+    runs-on: windows-latest
+    env:
+      LIBKURAJI_INTEGRATION: "1"
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install package with integration dependencies
+        run: pip install -e .[dev,integration]
+      - name: Run integration tests
+        run: pytest tests/test_integration.py -k "not test_mecab_fixture_parity" -q

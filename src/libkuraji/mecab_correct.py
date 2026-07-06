@@ -131,6 +131,33 @@ def convertSpellChar(msg: str) -> str:
 
 RE_FULLSHAPE_ALPHA = re.compile("^[Ａ-Ｚａ-ｚ]+$")
 
+# Single fullwidth characters that fugashi's libmecab emits as 名詞,サ変接続
+# (unknown word) but the nvdajp MeCab fork emits as 記号,括弧閉 via unk.dic.
+# Used by correct_features to restore the 記号 class for these characters.
+_BRACKET_CLOSE_CHARS = frozenset("＂＇")
+
+_FALLBACK_TABLE = {
+	"＂": "”,記号,括弧閉,*,*,*,*,”,”,”,*/*,*",
+	"＇": "’,記号,括弧閉,*,*,*,*,’,’,’,*/*,*",
+	"｀": "‘,記号,括弧開,*,*,*,*,‘,‘,‘,*/*,*",
+}
+
+
+def _split_surface(surface: str) -> list[str]:
+	chunks = []
+	current_chunk = []
+	for c in surface:
+		if c.isalnum():
+			current_chunk.append(c)
+		else:
+			if current_chunk:
+				chunks.append("".join(current_chunk))
+				current_chunk = []
+			chunks.append(c)
+	if current_chunk:
+		chunks.append("".join(current_chunk))
+	return chunks
+
 
 def getMoraCount(s: str) -> int:
 	m = s.split("/")
@@ -235,6 +262,36 @@ def correct_features(
 	n = len(lines)
 	# operate on a mutable copy of split fields
 	parsed = [line.split(",") if line else [] for line in lines]
+
+	new_parsed = []
+	for pos in range(n):
+		ar = parsed[pos]
+		if not ar:
+			continue
+		if (
+			len(ar) > 7
+			and len(ar[0]) > 1
+			and ar[1] == "名詞"
+			and ar[2] == "サ変接続"
+			and ar[7] == "*"
+			and any(not c.isalnum() for c in ar[0])
+			and len(set(ar[0])) > 1
+		):
+			for chunk in _split_surface(ar[0]):
+				if len(chunk) == 1 and chunk in _FALLBACK_TABLE:
+					new_parsed.append(_FALLBACK_TABLE[chunk].split(","))
+				else:
+					if reparse is not None:
+						sub_lines = reparse(chunk)
+						for sl in sub_lines:
+							new_parsed.append(sl.split(","))
+					else:
+						new_parsed.append([chunk, "名詞", "サ変接続", "*", "*", "*", "*", "*"])
+		else:
+			new_parsed.append(ar)
+	parsed = new_parsed
+	n = len(parsed)
+
 	for pos in range(n):
 		ar = parsed[pos]
 		if not ar:
@@ -260,6 +317,15 @@ def correct_features(
 				parsed[pos - 2] = feature.split(",")
 				parsed[pos - 1] = ",,,*,*,*,*".split(",")
 				parsed[pos] = feature.split(",")
+		elif (
+			len(ar) > 7
+			and len(ar[0]) == 1
+			and ar[1] == "名詞"
+			and ar[2] == "サ変接続"
+			and ar[7] == "*"
+			and ar[0] in _FALLBACK_TABLE
+		):
+			parsed[pos] = _FALLBACK_TABLE[ar[0]].split(",")
 		elif (len(ar) > 2 and ar[2] == "数" and len(ar) > 7 and ar[7] == "*") or (
 			len(ar) > 2 and ar[1] == "名詞" and ar[2] == "サ変接続" and len(ar) > 7 and ar[7] == "*"
 		):
@@ -272,6 +338,8 @@ def correct_features(
 					sub_lines = reparse(c)
 					for sl in sub_lines:
 						ar2 = sl.split(",")
+						if len(ar2) > 7 and ar2[7] == "*" and c in _FALLBACK_TABLE:
+							ar2 = _FALLBACK_TABLE[c].split(",")
 						if len(ar2) > 10:
 							yomi += ar2[8]
 							pron += ar2[9]
@@ -280,6 +348,26 @@ def correct_features(
 					h=hyoki, y=yomi, p=pron, m=mora,
 				)
 				parsed[pos] = feature.split(",")
+		elif (
+			len(ar) > 7
+			and len(ar[0]) == 1
+			and ar[1] == "名詞"
+			and ar[2] == "サ変接続"
+			and ar[7] == "*"
+		):
+			# Single-character unknown words that should be 記号 (symbols).
+			#
+			# The fugashi-bundled libmecab emits some fullwidth punctuation
+			# (notably ＂ U+FF02 and ＇ U+FF07) as 名詞,サ変接続 unknown words
+			# instead of 記号, because its unk.dic lacks the mapping that the
+			# nvdajp MeCab fork has. The fixture was recorded against the
+			# nvdajp fork, which outputs these as 記号,括弧閉. Map them here
+			# so the analysis matches.
+			hyoki = ar[0]
+			hin2 = "括弧閉" if hyoki in _BRACKET_CLOSE_CHARS else "一般"
+			parsed[pos] = "{h},記号,{h2},*,*,*,*,{h},{h},{h},*/*,*".format(
+				h=hyoki, h2=hin2,
+			).split(",")
 		elif ar2 and ar[0] == "ー" and len(ar) > 2 and ar[1] == "名詞" and ar[2] == "一般":
 			if len(ar2) > 10:
 				hyoki = ar2[0] + "ー"
