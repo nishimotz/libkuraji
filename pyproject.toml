@@ -24,6 +24,7 @@ kuraji = "libkuraji.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest"]
+integration = ["fugashi"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
