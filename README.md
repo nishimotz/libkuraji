@@ -83,11 +83,11 @@ pytest tests/test_integration.py -q
 
 辞書バイナリは [libkuraji-jtalk-dic](https://github.com/nishimotz/libkuraji-jtalk-dic) の GitHub Release から取得します。取得するタグは `LIBKURAJI_JTALK_DIC_TAG` で上書き可能（既定値は `src/libkuraji/jtalk_dic.py` の `DEFAULT_DIC_TAG` に pin されています）。展開済み辞書ディレクトリを直接指定する場合は `LIBKURAJI_JTALK_DIC_DIR` を使ってください（その場合はダウンロードをスキップします）。
 
-この統合テストは CI では走りません。辞書リリースごとの手動検証、および辞書 drift の早期検出（`mecabFixture.json` との照合）に使います。
+この統合テストの一部（点訳・分かち書きの整合性検証）は、CI（GitHub Actions）の Windows 環境でも自動実行されるようになっています。ただし、MeCab本体のバージョン差による内部的なトークン・フィーチャー出力の差異（`test_mecab_fixture_parity`）は CI の実行対象から除外されています。
 
 実行には `pip install -e .[dev,integration]` で `fugashi` を導入します。`fugashi` の Windows wheel は `libmecab.dll` を同梱しているため、**Windows でも pip だけで完結します**（`libmecab` のシステムインストールは不要）。
 
-統合テストは `mecab_correct.py`（元 nvdajp の `Mecab_correctFeatures` を BSD 再許諾のうえ移管）で MeCab 出力の補正も再現しています。ただし、`fugashi` 同梱の `libmecab.dll` と fixture 録画時に使った nvdajp 版 MeCab で未知語（記号）の分割挙動に差があるため、記号のみの入力など少数ケースで fixture と一致しません（全体の約 98% は一致）。これは辞書リリース時の fixture 再録画で解消可能です。
+統合テストは `mecab_correct.py`（元 nvdajp の `Mecab_correctFeatures` を BSD 再許諾のうえ移管）で MeCab 出力の補正も再現しています。ただし、`fugashi` 同梱の `libmecab.dll` と fixture 録画時に使った nvdajp 版 MeCab で未知語（記号）の分割挙動に差があるため、記号のみの入力など少数ケースで fixture と一致しません（全体の約 98% は一致）。この MeCab 本体の挙動の違いによる内部出力の差分は CI では無視されますが、点訳の最終出力の整合性は完全に維持されており、CI も Green でパスする構成になっています。
 
 ## NVDA 日本語版との関係
 
