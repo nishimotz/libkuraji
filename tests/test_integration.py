@@ -35,6 +35,12 @@ def _integration_enabled() -> bool:
     )
 
 
+def _parity_enabled() -> bool:
+    return os.environ.get("LIBKURAJI_PARITY_CHECK", "").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+
+
 # Skip the whole module unless explicitly opted in. fugashi is imported
 # lazily inside the fixture so that missing dependencies don't break
 # collection of the rest of the suite.
@@ -158,6 +164,10 @@ def _fixture_parity_cases():
     return cases
 
 
+@pytest.mark.skipif(
+    not _parity_enabled(),
+    reason="set LIBKURAJI_PARITY_CHECK=1 to run MeCab output parity checks",
+)
 @pytest.mark.parametrize("text_expected", _fixture_parity_cases())
 def test_mecab_fixture_parity(text_expected, analyzer):
     text, expected = text_expected

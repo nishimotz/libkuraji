@@ -49,4 +49,4 @@ jobs:
       - name: Install package with integration dependencies
         run: pip install -e .[dev,integration]
       - name: Run integration tests
-        run: pytest tests/test_integration.py -k "not test_mecab_fixture_parity" -q
+        run: pytest tests/test_integration.py -q

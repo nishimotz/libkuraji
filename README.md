@@ -79,11 +79,15 @@ pytest
 pip install -e .[dev,integration]
 $env:LIBKURAJI_INTEGRATION=1
 pytest tests/test_integration.py -q
+
+# （オプション）MeCab出力の完全一致チェック（パリティテスト）も実行する場合
+$env:LIBKURAJI_PARITY_CHECK=1
+pytest tests/test_integration.py -q
 ```
 
 辞書バイナリは [libkuraji-jtalk-dic](https://github.com/nishimotz/libkuraji-jtalk-dic) の GitHub Release から取得します。取得するタグは `LIBKURAJI_JTALK_DIC_TAG` で上書き可能（既定値は `src/libkuraji/jtalk_dic.py` の `DEFAULT_DIC_TAG` に pin されています）。展開済み辞書ディレクトリを直接指定する場合は `LIBKURAJI_JTALK_DIC_DIR` を使ってください（その場合はダウンロードをスキップします）。
 
-この統合テストの一部（点訳・分かち書きの整合性検証）は、CI（GitHub Actions）の Windows 環境でも自動実行されるようになっています。ただし、MeCab本体のバージョン差による内部的なトークン・フィーチャー出力の差異（`test_mecab_fixture_parity`）は CI の実行対象から除外されています。
+この統合テストの一部（点訳・分かち書きの整合性検証）は、CI（GitHub Actions）の Windows および Linux 環境でも自動実行されるようになっています。ただし、MeCab本体のバージョン差による内部的なトークン・フィーチャー出力の差異（`test_mecab_fixture_parity`）は、辞書アップデート時などの差分検証用テストであるため、デフォルトでスキップされます（実行するには `LIBKURAJI_PARITY_CHECK=1` を指定します）。
 
 実行には `pip install -e .[dev,integration]` で `fugashi` を導入します。`fugashi` の Windows wheel は `libmecab.dll` を同梱しているため、**Windows でも pip だけで完結します**（`libmecab` のシステムインストールは不要）。
 
