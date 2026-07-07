@@ -30,7 +30,7 @@ from typing import Callable, List, Optional
 # Pinned default release tag of libkuraji-jtalk-dic. Override with the
 # LIBKURAJI_JTALK_DIC_TAG environment variable. Bump this when a new
 # dictionary release is validated against the harness.
-DEFAULT_DIC_TAG = "v1.1.1"
+DEFAULT_DIC_TAG = "v1.1.2"
 
 # Owner/repo of the dictionary release.
 DIC_REPO = "nishimotz/libkuraji-jtalk-dic"
