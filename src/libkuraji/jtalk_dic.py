@@ -158,7 +158,7 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
         zf.extractall(extracted)
 
     dicrc_path = extracted / "dicrc"
-    if dicrc_path.exists():
+    if sys.platform != "win32" and dicrc_path.exists():
         try:
             content = dicrc_path.read_bytes()
             lf_content = content.replace(b"\r\n", b"\n")
