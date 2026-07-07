@@ -157,6 +157,16 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(extracted)
 
+    dicrc_path = extracted / "dicrc"
+    if dicrc_path.exists():
+        try:
+            content = dicrc_path.read_bytes()
+            lf_content = content.replace(b"\r\n", b"\n")
+            if lf_content != content:
+                dicrc_path.write_bytes(lf_content)
+        except Exception:
+            pass
+
     if not (extracted / "sys.dic").exists():
         raise RuntimeError(
             f"sys.dic not found in extracted {zip_name}; archive layout changed?"
