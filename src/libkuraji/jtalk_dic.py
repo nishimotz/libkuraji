@@ -140,25 +140,32 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
     zip_path = cache / zip_name
 
     if not zip_path.exists() or force:
+        downloaded = False
         if _gh_available():
-            subprocess.run(
-                [
-                    "gh", "release", "download", tag,
-                    "--repo", DIC_REPO,
-                    "--pattern", zip_name,
-                    "--dir", str(cache),
-                    "--clobber",
-                ],
-                check=True,
-            )
-        else:
+            try:
+                subprocess.run(
+                    [
+                        "gh", "release", "download", tag,
+                        "--repo", DIC_REPO,
+                        "--pattern", zip_name,
+                        "--dir", str(cache),
+                        "--clobber",
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                downloaded = True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pass
+
+        if not downloaded:
             _download_via_rest(tag, zip_name, zip_path)
 
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(extracted)
 
     dicrc_path = extracted / "dicrc"
-    if sys.platform != "win32" and dicrc_path.exists():
+    if dicrc_path.exists():
         try:
             content = dicrc_path.read_bytes()
             lf_content = content.replace(b"\r\n", b"\n")

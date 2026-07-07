@@ -36,6 +36,7 @@ jobs:
     env:
       LIBKURAJI_INTEGRATION: "1"
       PYTHONUTF8: "1"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
