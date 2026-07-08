@@ -47,11 +47,15 @@ def main(argv=None) -> int:
 
     # Check if MeCab analyzer support is available
     has_mecab = False
-    try:
-        import fugashi  # noqa: F401
+    from . import translator2
+    if translator2.mecab_initialized:
         has_mecab = True
-    except ImportError:
-        pass
+    else:
+        try:
+            import fugashi  # noqa: F401
+            has_mecab = True
+        except ImportError:
+            pass
 
     if args.kanji and not has_mecab:
         print(
