@@ -28,32 +28,45 @@ cells, inpos = translate_with_pos("コンニチワ 2026ネン")
 
 NABCC（コンピュータ点字）モードは `translate(text, nabcc=True)`。
 
+### 漢字仮名交じり→点字（MeCab / JTalk 拡張辞書）
+
+漢字仮名交じり文をそのまま点訳するには、形態素解析器（MeCab / JTalk 拡張辞書）を使用します。
+
+事前に `pip install libkuraji[integration]` を実行して `fugashi` をインストールしてください。
+
+```python
+import libkuraji
+
+# MeCabとJTalk拡張辞書を自動でダウンロード・セットアップして翻訳
+cells, inpos, outpos, cursor = libkuraji.translate_kanji("私は点字を読みます")
+# => '⠄⠕⠳⠄ ⠟⠴⠐⠳⠔ ⠜⠷⠵⠹⠲'
+```
+
+カスタムの解析器（形態素解析器）を使用する場合は、`initialize` で明示的に注入できます。
+
+```python
+import libkuraji
+
+# analyzer には analyze(text, logwrite) と is_ready() を持つオブジェクトを指定します
+libkuraji.initialize(analyzer=my_analyzer)
+cells, inpos, outpos, cursor = libkuraji.translate_kanji("私は点字を読みます")
+```
+
 ### CLI
 
 ```console
+# カナ入力（依存パッケージ不要で実行可能）
 $ kuraji "ワタシワ テンジヲ ヨミマス。"
 ⠄⠕⠳⠄ ⠟⠴⠐⠳⠔ ⠜⠷⠵⠹⠲
-$ echo テキスト | kuraji
-$ kuraji --nabcc "ガイド(U)"
+
+# 漢字交じり入力（[integration] がインストールされている場合、自動で実辞書を使用して翻訳）
+$ kuraji "私は点字を読みます。"
+⠄⠕⠳⠄ ⠟⠴⠐⠳⠔ ⠜⠷⠵⠹⠲
+
+# 位置対応マップ（JSON形式）を合わせて出力
+$ kuraji "ア" --positions
+{"text": "ア", "braille": "⠁", "inPos": [0], "outPos": [0]}
 ```
-
-### 分かち書きパイプライン（translator2）
-
-漢字かな交じり文からの点訳には形態素解析器の注入が必要です。
-
-```python
-from libkuraji import translator2
-
-translator2.initialize(analyzer=my_analyzer)
-kana, cells, inpos1, inpos2 = translator2.translateWithInPos2("私は点字を読みます")
-```
-
-`analyzer` に必要なインターフェースは次の 2 つです。
-
-- `analyze(text, logwrite) -> list[str]` — MeCab 形式のデコード済み feature 行を返す
-- `is_ready() -> bool`
-
-参照構成（テストスイートが保証する構成）は **MeCab + JTalk 拡張辞書**（NVDA 日本語版の `mecabAnalyzer.py`）です。feature 行の第 13 フィールド（点訳表記）はこの辞書の拡張仕様で、無い場合は読みフィールドにフォールバックします。汎用辞書（mecab-python3 + ipadic 等）の注入も可能ですが、読み・分かち書きの品質は保証外です。
 
 ## テスト
 
