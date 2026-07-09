@@ -1,23 +1,25 @@
 # libkuraji
 
-日本語点訳エンジン（NVDA 日本語版由来）/ Japanese Braille translator originally developed for NVDAJP.
+[日本語](README-ja.md)
 
-漢字仮名交じりの日本語テキストを、形態素解析による分かち書き（マスあけ）とともに日本語 6 点点字（Unicode braille patterns）へ変換します。点字セルごとの元テキスト位置マップも返します。
+Japanese Braille translator originally developed for NVDAJP.
 
-## 必要要件
+Translates mixed Kanji/Kana Japanese text into Japanese 6-dot braille (Unicode braille patterns), with morphological word segmentation (masuake / spacing). Returns a position map from each braille cell back to the source text.
 
-- Python 3.10 以上
-- `pip install libkuraji[integration]`（`fugashi`）
-- 環境変数 `LIBKURAJI_INTEGRATION=1`（JTalk 拡張辞書の利用を有効化）
+## Requirements
 
-## インストール
+- Python 3.10 or later
+- `pip install libkuraji[integration]` (`fugashi`)
+- Environment variable `LIBKURAJI_INTEGRATION=1` (enables the JTalk extended dictionary)
+
+## Installation
 
 ```console
 pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
 export LIBKURAJI_INTEGRATION=1   # Windows PowerShell: $env:LIBKURAJI_INTEGRATION=1
 ```
 
-macOS や Homebrew 版 Python では、システム全体へのインストールが制限されることがあります。その場合は仮想環境を使ってください。
+On macOS and Homebrew Python, system-wide installs may be restricted. Use a virtual environment in that case.
 
 ```console
 python3 -m venv .venv
@@ -26,7 +28,7 @@ pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
 export LIBKURAJI_INTEGRATION=1
 ```
 
-### 開発向け（リポジトリから）
+### For development (from the repository)
 
 ```console
 git clone https://github.com/nishimotz/libkuraji.git
@@ -37,11 +39,11 @@ pip install -e '.[dev,integration]'
 export LIBKURAJI_INTEGRATION=1
 ```
 
-zsh では `[dev]` や `[integration]` をクォートしてください（`'.[dev,integration]'`）。
+In zsh, quote the extras: `'.[dev,integration]'`.
 
-## クイックスタート
+## Quick start
 
-初回実行時に [libkuraji-jtalk-dic](https://github.com/nishimotz/libkuraji-jtalk-dic) の辞書バイナリが GitHub Release から自動ダウンロードされます。
+On first run, dictionary binaries from [libkuraji-jtalk-dic](https://github.com/nishimotz/libkuraji-jtalk-dic) are downloaded automatically from GitHub Releases.
 
 ```console
 kuraji "私は点字を読みます。"
@@ -58,9 +60,9 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 # => '⠄⠕⠳⠄ ⠟⠴⠐⠳⠔ ⠜⠷⠵⠹⠲'
 ```
 
-`unicodeIO=True` を指定してください（CLI と同じ Unicode 点字が返ります）。
+Pass `unicodeIO=True` to get Unicode braille (the same format as the CLI).
 
-## 使い方
+## Usage
 
 ### Python API
 
@@ -71,11 +73,11 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
     "私は点字を読みます。",
     unicodeIO=True,
 )
-# cells[i] に対応する入力位置が inpos[i]
-# 入力位置 j に対応する点字位置が outpos[j]
+# inpos[i] is the input index for cells[i]
+# outpos[j] is the braille index for input position j
 ```
 
-カスタムの形態素解析器を使う場合は、`initialize` で注入できます。解析器は `analyze(text, logwrite)` と `is_ready()` を実装している必要があります。
+To use a custom morphological analyzer, inject it with `initialize`. The analyzer must implement `analyze(text, logwrite)` and `is_ready()`.
 
 ```python
 libkuraji.initialize(analyzer=my_analyzer)
@@ -85,18 +87,18 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 )
 ```
 
-NABCC（コンピュータ点字）モードは `translate_kanji(text, nabcc=True, unicodeIO=True)`。
+For NABCC (computer braille) mode: `translate_kanji(text, nabcc=True, unicodeIO=True)`.
 
-出力の文字コード仕様（Unicode 点字 / liblouis dotsIO、`unicodeIO` の意味）は [docs/encoding.md](docs/encoding.md) にまとめています。
+See [docs/encoding.md](docs/encoding.md) for output encoding details (Unicode braille vs liblouis dotsIO, and what `unicodeIO` means).
 
-#### MeCab のセットアップ
+#### MeCab setup
 
-| 環境 | 備考 |
-|------|------|
-| Windows | `fugashi` の wheel に `libmecab.dll` が同梱されるため、`pip` だけで動作します |
-| macOS / Linux | 本リポジトリの検証では `fugashi` のみで動作しました。環境によっては [MeCab](https://taku910.github.io/mecab/) のシステムインストールが必要な場合があります |
+| Platform | Notes |
+|----------|-------|
+| Windows | The `fugashi` wheel bundles `libmecab.dll`, so `pip` alone is sufficient |
+| macOS / Linux | Verified in this repository with `fugashi` only. Some environments may require a system [MeCab](https://taku910.github.io/mecab/) install |
 
-辞書の取得先タグは `LIBKURAJI_JTALK_DIC_TAG` で上書きできます（既定値は `src/libkuraji/jtalk_dic.py` の `DEFAULT_DIC_TAG`）。展開済み辞書ディレクトリを直接指定する場合は `LIBKURAJI_JTALK_DIC_DIR` を使えます（ダウンロードをスキップします）。
+Override the dictionary release tag with `LIBKURAJI_JTALK_DIC_TAG` (default: `DEFAULT_DIC_TAG` in `src/libkuraji/jtalk_dic.py`). To skip download, point `LIBKURAJI_JTALK_DIC_DIR` at an already extracted dictionary directory.
 
 ### CLI
 
@@ -108,18 +110,18 @@ kuraji "私は点字を読みます。" --positions
 {"text": "私は点字を読みます。", "braille": "⠄⠕⠳⠄ ⠟⠴⠐⠳⠔ ⠜⠷⠵⠹⠲", ...}
 ```
 
-主なオプション:
+Main options:
 
-| オプション | 説明 |
-|-----------|------|
-| `-p` / `--positions` | 位置マップを JSON で出力 |
-| `--nabcc` | NABCC（コンピュータ点字）モード |
-| `-j` / `--kanji` | 漢字交じりモードを強制 |
-| `-k` / `--kana` | カナ専用モード（後述） |
+| Option | Description |
+|--------|-------------|
+| `-p` / `--positions` | Output position map as JSON |
+| `--nabcc` | NABCC (computer braille) mode |
+| `-j` / `--kanji` | Force mixed Kanji/Kana mode |
+| `-k` / `--kana` | Kana-only mode (see below) |
 
-### カナ入力のみ（補足）
+### Kana input only (supplement)
 
-すでにカナ表記のテキストを点訳する場合は、MeCab なしで `translate` を使えます。
+If the input is already in katakana, use `translate` without MeCab.
 
 ```python
 from libkuraji import translate
@@ -131,55 +133,55 @@ translate("ワタシワ テンジヲ ヨミマス。")
 kuraji -k "ワタシワ テンジヲ ヨミマス。"
 ```
 
-## テスト
+## Testing
 
-### 通常テスト（CI と同じ）
+### Default tests (same as CI)
 
-MeCab なしで実行できます。`tests/mecabFixture.json` に録画した MeCab 出力を再生して translator2 を検証します。
+Runs without MeCab. Replays recorded MeCab output from `tests/mecabFixture.json` to verify translator2.
 
 ```console
 pip install -e '.[dev]'
 pytest
 ```
 
-テストデータ `tests/harness.json` 等は点訳のてびきの規則に基づくテストケース集です。`tests/mecabFixture.json` の再録画は nvdajp リポジトリの `miscDepsJp/jptools/recordMecabFixture.py` を使います。
+Test data in `tests/harness.json` and related files follow rules from the Japanese braille guide (*Ten'yaku no Tebiki*). To re-record `tests/mecabFixture.json`, use `miscDepsJp/jptools/recordMecabFixture.py` in the nvdajp repository.
 
-### 実辞書を使った統合テスト（任意）
+### Integration tests with the real dictionary (optional)
 
-実際の JTalk 拡張辞書と MeCab で点訳を検証する opt-in テストです。
+Opt-in tests that verify translation against the live JTalk extended dictionary and MeCab.
 
-事前要件:
+Prerequisites:
 
 - `pip install -e '.[dev,integration]'`
-- `gh` CLI（未導入なら GitHub REST API にフォールバック）
+- `gh` CLI (falls back to the GitHub REST API if unavailable)
 
-実行:
+Run:
 
 ```console
 export LIBKURAJI_INTEGRATION=1
 pytest tests/test_integration.py -q
 
-# MeCab 出力の完全一致チェック（パリティテスト）も実行する場合
+# Also run exact MeCab output parity checks
 export LIBKURAJI_PARITY_CHECK=1
 pytest tests/test_integration.py -q
 ```
 
-Windows PowerShell の場合:
+On Windows PowerShell:
 
 ```powershell
 $env:LIBKURAJI_INTEGRATION=1
 pytest tests/test_integration.py -q
 ```
 
-統合テストの一部は CI（GitHub Actions）の Windows および Linux 環境でも自動実行されます。`test_mecab_fixture_parity`（MeCab 本体のバージョン差による内部出力の比較）は辞書アップデート時の差分検証用のため、デフォルトではスキップされます。
+Some integration tests also run in CI (GitHub Actions) on Windows and Linux. `test_mecab_fixture_parity` (internal MeCab output comparison across versions) is skipped by default and intended for dictionary update verification.
 
-統合テストは `mecab_correct.py`（元 nvdajp の `Mecab_correctFeatures` を BSD 再許諾のうえ移管）で MeCab 出力の補正も再現しています。`fugashi` 同梱の `libmecab.dll` と fixture 録画時の nvdajp 版 MeCab では、記号のみの入力など少数ケースで内部出力が一致しないことがあります（全体の約 98% は一致）。点訳の最終出力の整合性は維持されており、CI も Green でパスする構成です。
+Integration tests also reproduce MeCab output correction via `mecab_correct.py` (ported from nvdajp's `Mecab_correctFeatures` under BSD relicensing). The `libmecab.dll` bundled with `fugashi` and the nvdajp MeCab used when recording fixtures may differ on a few symbol-only inputs (about 98% match overall). Final braille output consistency is preserved and CI passes.
 
-## NVDA 日本語版との関係
+## Relationship to NVDA Japanese
 
-- 本ライブラリは [nvdajp](https://github.com/nvdajp/nvdajp) の点訳エンジン（translator1/translator2）を分離・独立させたものです。translator1 相当（`kana` モジュール）はテスト駆動で新規に書き直したクリーンルーム実装、translator2 は著作権者による BSD 再許諾のうえ移管しました。
-- 分離計画の詳細: nvdajp の `projectDocs/jp/braille-engine-decoupling-plan.md`
+- This library separates and standalone-izes the braille engine (translator1/translator2) from [nvdajp](https://github.com/nvdajp/nvdajp). The translator1 equivalent (`kana` module) is a clean-room rewrite driven by tests; translator2 was ported under BSD relicensing by the copyright holder.
+- Decoupling plan: `projectDocs/jp/braille-engine-decoupling-plan.md` in the nvdajp repository.
 
-## ライセンス
+## License
 
 BSD 3-Clause License. See [LICENSE](LICENSE).
