@@ -37,6 +37,14 @@ def translate_kanji(
 
     If the analyzer has not been initialized, it will be automatically initialized
     with the default JTalkDicAnalyzer.
+
+    Keyword arguments are forwarded to ``translator2.translate``. Notable options:
+
+    * ``unicodeIO`` (bool, default ``False``): If ``True``, return Unicode braille
+      (U+2800..U+28FF, blanks as U+0020), matching the CLI and liblouis
+      ``dotsIO | ucBrl``. If ``False``, return liblouis ``dotsIO`` cells
+      (U+8000..U+80FF, blanks as U+2800), the inherited nvdajp translator2
+      default. See ``docs/encoding.md``.
     """
     from . import translator2
     if not translator2.mecab_initialized:
