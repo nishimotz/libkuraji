@@ -40,7 +40,13 @@ NVDA 日本語版がこの形式を使っていたのは、スクリーンリー
 
 逆変換（dotsIO → Unicode）は `chr(ord(c) - 0x8000 + 0x2800)` です（`U+8000` は空白セル）。
 
-外国語引用符内の liblouis 2 級変換でも、`_apply_louis_to_foreign_quotes` は `louis.dotsIO` モードで呼び出し、返り値を `_louis_cells_to_braille_string` で Unicode 点字に正規化してから `outbuf` に統合します。
+### 外国語引用符内の liblouis 2 級変換（参考）
+
+`_apply_louis_to_foreign_quotes` は、呼び出し元が `louisTranslate` 関数と `louisTableList` を注入した場合に限り、外国語引用符 `⠦...⠴` の内側を liblouis で 2 級変換します。libkuraji 自身は `louis` の translate 関数を提供せず、この機能は外部依存です。
+
+注入時は `louis.dotsIO` モードで呼び出し、返り値を `_louis_cells_to_braille_string` で Unicode 点字に正規化してから `outbuf` に統合します。
+
+なお、情報処理点字 `⠠⠦...⠠⠴`（URL、メールアドレス、パスなど）は 2 級変換の対象外です。`_find_foreign_quote_ranges` が `⠠` プレフィックス付きの範囲を明示的にスキップします。
 
 ## API ごとの既定値
 

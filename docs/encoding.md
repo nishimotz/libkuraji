@@ -40,7 +40,13 @@ Internally, braille is built as Unicode braille (blanks as `U+0020`). When `unic
 
 The reverse conversion (dotsIO → Unicode) is `chr(ord(c) - 0x8000 + 0x2800)` (`U+8000` is a blank cell).
 
-For Grade 2 translation inside foreign quotation marks, `_apply_louis_to_foreign_quotes` calls liblouis with `louis.dotsIO`, then normalizes the result to Unicode braille via `_louis_cells_to_braille_string` before merging into `outbuf`.
+### Grade 2 translation inside foreign quotation marks (reference)
+
+`_apply_louis_to_foreign_quotes` performs Grade 2 translation on the inner text of foreign quotation marks `⠦...⠴` **only when the caller injects** a `louisTranslate` function and `louisTableList`. libkuraji itself does not provide a `louis` translate function — this feature is an external dependency.
+
+When injected, it calls liblouis with `louis.dotsIO` mode, then normalizes the result to Unicode braille via `_louis_cells_to_braille_string` before merging into `outbuf`.
+
+Information processing braille `⠠⠦...⠠⠴` (URLs, email addresses, file paths, etc.) is excluded from Grade 2 translation. `_find_foreign_quote_ranges` explicitly skips ranges prefixed with `⠠`.
 
 ## Defaults by API
 

@@ -91,6 +91,36 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 
 For NABCC (computer braille) mode: `translate_kanji(text, nabcc=True, unicodeIO=True)`.
 
+#### Foreign quotation marks and information processing braille
+
+libkuraji automatically detects words containing Latin letters and symbols, wrapping them in one of two braille indicators.
+
+| Mode | Indicator | Target | Grade 2 English |
+|------|-----------|--------|-----------------|
+| Foreign quotation marks | `⠦...⠴` | Natural language foreign text (with spaces/apostrophes) | Only when liblouis is injected |
+| Information processing braille | `⠠⠦...⠠⠴` | URLs, email addresses, file paths, etc. | Not applicable |
+
+#### Grade 2 English braille inside foreign quotation marks
+
+Pass a `louisTranslate` function and `louisTableList` (e.g. `["en-ueb-g2.ctb"]`) to `translate_kanji` to apply Grade 2 English braille translation to the inner text of foreign quotation marks `⠦...⠴`. libkuraji does not provide a `louis` translate function — the caller must inject it.
+
+```python
+import louis
+
+def my_louis_translate(table_list, text, cursorPos=0, mode=0):
+    return louis.translate(
+        table_list, text,
+        cursorPos=cursorPos, mode=mode,
+    )
+
+cells, inpos, outpos, cursor = libkuraji.translate_kanji(
+    "これは ⠦English text⠴ です。",
+    unicodeIO=True,
+    louisTranslate=my_louis_translate,
+    louisTableList=["en-ueb-g2.ctb"],
+)
+```
+
 See [docs/encoding.md](docs/encoding.md) for output encoding details (Unicode braille vs liblouis dotsIO, and what `unicodeIO` means).
 
 #### MeCab setup

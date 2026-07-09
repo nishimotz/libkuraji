@@ -91,6 +91,36 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 
 NABCC（コンピュータ点字）モードは `translate_kanji(text, nabcc=True, unicodeIO=True)`。
 
+#### 外国語引用符と情報処理点字
+
+libkuraji は英字・記号を含む語を自動判別し、2 種類の点字記号で囲みます。
+
+| モード | 記号 | 対象 | 2 級英点訳 |
+|--------|------|------|------------|
+| 外国語引用符 | `⠦...⠴` | 自然言語の外国語（空白・アポストロフィ含む） | liblouis 注入時のみ |
+| 情報処理点字 | `⠠⠦...⠠⠴` | URL、メールアドレス、パスなど | 対象外 |
+
+#### 外国語引用符内の 2 級英点訳
+
+`translate_kanji` に `louisTranslate` 関数と `louisTableList`（例: `["en-ueb-g2.ctb"]`）を渡すと、外国語引用符 `⠦...⠴` の内側を liblouis で 2 級英点訳できます。libkuraji 自身は `louis` の translate 関数を提供しないため、呼び出し元が注入する必要があります。
+
+```python
+import louis
+
+def my_louis_translate(table_list, text, cursorPos=0, mode=0):
+    return louis.translate(
+        table_list, text,
+        cursorPos=cursorPos, mode=mode,
+    )
+
+cells, inpos, outpos, cursor = libkuraji.translate_kanji(
+    "これは ⠦English text⠴ です。",
+    unicodeIO=True,
+    louisTranslate=my_louis_translate,
+    louisTableList=["en-ueb-g2.ctb"],
+)
+```
+
 出力の文字コード仕様（Unicode 点字 / liblouis dotsIO、`unicodeIO` の意味）は [docs/encoding-ja.md](docs/encoding-ja.md) にまとめています。
 
 #### MeCab のセットアップ
