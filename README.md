@@ -62,6 +62,8 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 
 Pass `unicodeIO=True` to get Unicode braille (the same format as the CLI).
 
+Input is limited to 65,536 characters by default (`InputTooLongError` when exceeded). Override with `LIBKURAJI_MAX_INPUT_CHARS`; set `0` to disable the limit.
+
 ## Usage
 
 ### Python API

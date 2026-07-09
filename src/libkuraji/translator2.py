@@ -16,6 +16,7 @@ import re
 from typing import Callable
 
 from .unicodeutil import unicode_normalize, nfkc_normalize_with_map
+from .limits import enforce_max_input_length
 from . import kana as translator1
 
 
@@ -2029,6 +2030,7 @@ def translate(
 	@rtype: (str, list of int, list of int, int)
 	@raise RuntimeError: If a complete translation could not be done.
 	"""
+	enforce_max_input_length(inbuf)
 	sp, outbuf, inpos1, inpos2 = translateWithInPos2(
 		inbuf,
 		logwrite=logwrite,

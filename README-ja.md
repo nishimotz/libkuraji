@@ -62,6 +62,8 @@ cells, inpos, outpos, cursor = libkuraji.translate_kanji(
 
 `unicodeIO=True` を指定してください（CLI と同じ Unicode 点字が返ります）。
 
+入力は既定で 65,536 文字までです（超過時は `InputTooLongError`）。`LIBKURAJI_MAX_INPUT_CHARS` で変更でき、`0` で無制限になります。
+
 ## 使い方
 
 ### Python API
