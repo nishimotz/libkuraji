@@ -1,5 +1,6 @@
 import hashlib
 import io
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import pytest
 from libkuraji import translate, translate_kanji
 from libkuraji.cli import main
 from libkuraji.jtalk_dic import (
+    _download_assets,
     _parse_sha256_digest,
     _safe_extract_zip,
     _validate_dic_tag,
@@ -72,6 +74,46 @@ def test_safe_extract_zip_allows_normal_members(tmp_path):
     with zipfile.ZipFile(io.BytesIO(buf.getvalue())) as zf:
         _safe_extract_zip(zf, dest)
     assert (dest / "sys.dic").read_text(encoding="utf-8") == "dummy"
+
+
+def test_download_assets_logs_gh_failure(monkeypatch, tmp_path):
+    logs: list[str] = []
+
+    monkeypatch.setattr("libkuraji.jtalk_dic._gh_available", lambda: True)
+
+    def fake_run(*_args, **_kwargs):
+        raise subprocess.CalledProcessError(
+            1,
+            ["gh"],
+            b"stdout message",
+            b"stderr message",
+        )
+
+    monkeypatch.setattr("libkuraji.jtalk_dic.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "libkuraji.jtalk_dic._download_asset_via_rest",
+        lambda tag, asset_name, dest: dest.parent.mkdir(parents=True, exist_ok=True) or dest.write_bytes(b"zip"),
+    )
+    monkeypatch.setattr("libkuraji.jtalk_dic._verify_zip_sha256", lambda *_args: None)
+    monkeypatch.setattr(
+        "libkuraji.jtalk_dic._parse_sha256_digest",
+        lambda _content: "0" * 64,
+    )
+
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    _download_assets(
+        "v9.9.9",
+        cache,
+        "jtalk-dic-v9.9.9.zip",
+        "jtalk-dic-v9.9.9.zip.sha256",
+        logwrite=logs.append,
+    )
+
+    joined = "\n".join(logs)
+    assert "gh download failed" in joined
+    assert "stdout message" in joined
+    assert "stderr message" in joined
 
 
 def test_download_dic_verifies_sha256_before_extract(tmp_path, monkeypatch):

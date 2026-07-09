@@ -147,18 +147,36 @@ def _safe_extract_zip(zf: zipfile.ZipFile, dest: Path) -> None:
     dest_resolved = dest.resolve()
     for member in zf.namelist():
         target = (dest / member).resolve()
-        if target != dest_resolved and dest_resolved not in target.parents:
+        if not target.is_relative_to(dest_resolved):
             raise RuntimeError(f"unsafe zip member path: {member!r}")
     zf.extractall(dest)
 
 
-def _download_assets(tag: str, cache: Path, zip_name: str, sha_name: str) -> None:
+def _log_subprocess_output(
+    logwrite: Optional[Callable[[str], None]],
+    prefix: str,
+    data: bytes | None,
+) -> None:
+    if not logwrite or not data:
+        return
+    text = data.decode("utf-8", errors="replace").strip()
+    if text:
+        logwrite(f"{prefix}: {text}")
+
+
+def _download_assets(
+    tag: str,
+    cache: Path,
+    zip_name: str,
+    sha_name: str,
+    logwrite: Optional[Callable[[str], None]] = None,
+) -> None:
     zip_path = cache / zip_name
     sha_path = cache / sha_name
     downloaded = False
     if _gh_available():
         try:
-            subprocess.run(
+            result = subprocess.run(
                 [
                     "gh", "release", "download", tag,
                     "--repo", DIC_REPO,
@@ -171,8 +189,15 @@ def _download_assets(tag: str, cache: Path, zip_name: str, sha_name: str) -> Non
                 capture_output=True,
             )
             downloaded = True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
+            _log_subprocess_output(logwrite, "gh download stdout", result.stdout)
+        except subprocess.CalledProcessError as exc:
+            if logwrite:
+                logwrite(f"gh download failed (exit {exc.returncode}); falling back to GitHub REST API")
+            _log_subprocess_output(logwrite, "gh download stdout", exc.stdout)
+            _log_subprocess_output(logwrite, "gh download stderr", exc.stderr)
+        except FileNotFoundError:
+            if logwrite:
+                logwrite("gh CLI not found; falling back to GitHub REST API")
 
     if not downloaded:
         _download_asset_via_rest(tag, zip_name, zip_path)
@@ -184,7 +209,11 @@ def _download_assets(tag: str, cache: Path, zip_name: str, sha_name: str) -> Non
     _verify_zip_sha256(zip_path, expected_digest)
 
 
-def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
+def download_dic(
+    tag: Optional[str] = None,
+    force: bool = False,
+    logwrite: Optional[Callable[[str], None]] = None,
+) -> Path:
     """Download and extract the dictionary zip for the given release tag.
 
     Returns the path to the extracted dictionary directory (the one
@@ -212,7 +241,7 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
     zip_path = cache / zip_name
 
     if not zip_path.exists() or force:
-        _download_assets(tag, cache, zip_name, sha_name)
+        _download_assets(tag, cache, zip_name, sha_name, logwrite=logwrite)
     else:
         sha_path = cache / sha_name
         if not sha_path.exists():
@@ -351,5 +380,5 @@ def make_analyzer(
             "JTalk dictionary integration is opt-in; "
             "set LIBKURAJI_INTEGRATION=1 to enable."
         )
-    dic_dir = download_dic(tag)
+    dic_dir = download_dic(tag, logwrite=logwrite)
     return JTalkDicAnalyzer(dic_dir, logwrite=logwrite)
