@@ -18,7 +18,9 @@
 # require MeCab, fugashi, or network access. Integration tests opt in via
 # the LIBKURAJI_INTEGRATION=1 environment variable.
 
+import hashlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -39,6 +41,8 @@ DIC_REPO = "nishimotz/libkuraji-jtalk-dic"
 # in libkuraji-jtalk-dic.
 _DIC_ZIP_NAME = "jtalk-dic-{tag}.zip"
 _DIC_ZIP_SHA_NAME = "jtalk-dic-{tag}.zip.sha256"
+_DIC_TAG_RE = re.compile(r"^v\d+\.\d+\.\d+$")
+_DOWNLOAD_TIMEOUT_SEC = 120
 
 
 # Halfwidth-to-fullwidth conversion for the MeCab input pipeline.
@@ -84,9 +88,17 @@ def _env_truthy(name: str) -> bool:
     return v in ("1", "true", "yes", "on")
 
 
+def _validate_dic_tag(tag: str) -> str:
+    tag = tag.strip()
+    if not _DIC_TAG_RE.fullmatch(tag):
+        raise ValueError(f"invalid dictionary release tag: {tag!r}")
+    return tag
+
+
 def get_dic_tag() -> str:
     """Return the dictionary release tag to use."""
-    return os.environ.get("LIBKURAJI_JTALK_DIC_TAG", DEFAULT_DIC_TAG).strip() or DEFAULT_DIC_TAG
+    raw = os.environ.get("LIBKURAJI_JTALK_DIC_TAG", DEFAULT_DIC_TAG).strip()
+    return _validate_dic_tag(raw or DEFAULT_DIC_TAG)
 
 
 def get_cache_dir() -> Path:
@@ -113,14 +125,102 @@ def _gh_available() -> bool:
     return shutil.which("gh") is not None
 
 
-def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
+def _parse_sha256_digest(content: str) -> str:
+    line = content.strip().splitlines()[0]
+    return line.split()[0].lower()
+
+
+def _verify_zip_sha256(zip_path: Path, expected_digest: str) -> None:
+    digest = hashlib.sha256()
+    with zip_path.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            digest.update(chunk)
+    actual = digest.hexdigest().lower()
+    expected = expected_digest.lower()
+    if actual != expected:
+        raise RuntimeError(
+            f"SHA-256 mismatch for {zip_path.name}: expected {expected}, got {actual}"
+        )
+
+
+def _safe_extract_zip(zf: zipfile.ZipFile, dest: Path) -> None:
+    dest_resolved = dest.resolve()
+    for member in zf.namelist():
+        target = (dest / member).resolve()
+        if not target.is_relative_to(dest_resolved):
+            raise RuntimeError(f"unsafe zip member path: {member!r}")
+    zf.extractall(dest)
+
+
+def _log_subprocess_output(
+    logwrite: Optional[Callable[[str], None]],
+    prefix: str,
+    data: bytes | None,
+) -> None:
+    if not logwrite or not data:
+        return
+    text = data.decode("utf-8", errors="replace").strip()
+    if text:
+        logwrite(f"{prefix}: {text}")
+
+
+def _download_assets(
+    tag: str,
+    cache: Path,
+    zip_name: str,
+    sha_name: str,
+    logwrite: Optional[Callable[[str], None]] = None,
+) -> None:
+    zip_path = cache / zip_name
+    sha_path = cache / sha_name
+    downloaded = False
+    if _gh_available():
+        try:
+            result = subprocess.run(
+                [
+                    "gh", "release", "download", tag,
+                    "--repo", DIC_REPO,
+                    "--pattern", zip_name,
+                    "--pattern", sha_name,
+                    "--dir", str(cache),
+                    "--clobber",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            downloaded = True
+            _log_subprocess_output(logwrite, "gh download stdout", result.stdout)
+        except subprocess.CalledProcessError as exc:
+            if logwrite:
+                logwrite(f"gh download failed (exit {exc.returncode}); falling back to GitHub REST API")
+            _log_subprocess_output(logwrite, "gh download stdout", exc.stdout)
+            _log_subprocess_output(logwrite, "gh download stderr", exc.stderr)
+        except FileNotFoundError:
+            if logwrite:
+                logwrite("gh CLI not found; falling back to GitHub REST API")
+
+    if not downloaded:
+        _download_asset_via_rest(tag, zip_name, zip_path)
+        _download_asset_via_rest(tag, sha_name, sha_path)
+
+    if not sha_path.exists():
+        raise RuntimeError(f"SHA-256 sidecar not found for {zip_name}")
+    expected_digest = _parse_sha256_digest(sha_path.read_text(encoding="utf-8"))
+    _verify_zip_sha256(zip_path, expected_digest)
+
+
+def download_dic(
+    tag: Optional[str] = None,
+    force: bool = False,
+    logwrite: Optional[Callable[[str], None]] = None,
+) -> Path:
     """Download and extract the dictionary zip for the given release tag.
 
     Returns the path to the extracted dictionary directory (the one
     containing sys.dic). Uses the gh CLI if available, otherwise falls
     back to the GitHub REST API via urllib.
     """
-    tag = tag or get_dic_tag()
+    tag = _validate_dic_tag(tag or get_dic_tag())
     cache = get_cache_dir()
     # When LIBKURAJI_JTALK_DIC_DIR points directly at a dictionary dir,
     # cache == that dir and we must not try to "extract" into it.
@@ -137,32 +237,20 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
 
     cache.mkdir(parents=True, exist_ok=True)
     zip_name = _DIC_ZIP_NAME.format(tag=tag)
+    sha_name = _DIC_ZIP_SHA_NAME.format(tag=tag)
     zip_path = cache / zip_name
 
     if not zip_path.exists() or force:
-        downloaded = False
-        if _gh_available():
-            try:
-                subprocess.run(
-                    [
-                        "gh", "release", "download", tag,
-                        "--repo", DIC_REPO,
-                        "--pattern", zip_name,
-                        "--dir", str(cache),
-                        "--clobber",
-                    ],
-                    check=True,
-                    capture_output=True,
-                )
-                downloaded = True
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-
-        if not downloaded:
-            _download_via_rest(tag, zip_name, zip_path)
+        _download_assets(tag, cache, zip_name, sha_name, logwrite=logwrite)
+    else:
+        sha_path = cache / sha_name
+        if not sha_path.exists():
+            _download_asset_via_rest(tag, sha_name, sha_path)
+        expected_digest = _parse_sha256_digest(sha_path.read_text(encoding="utf-8"))
+        _verify_zip_sha256(zip_path, expected_digest)
 
     with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(extracted)
+        _safe_extract_zip(zf, extracted)
 
     dicrc_path = extracted / "dicrc"
     if dicrc_path.exists():
@@ -181,12 +269,14 @@ def download_dic(tag: Optional[str] = None, force: bool = False) -> Path:
     return extracted
 
 
-def _download_via_rest(tag: str, asset_name: str, dest: Path) -> None:
-    import urllib.request
+def _download_asset_via_rest(tag: str, asset_name: str, dest: Path) -> None:
     import json
+    import urllib.parse
+    import urllib.request
 
-    url = f"https://api.github.com/repos/{DIC_REPO}/releases/tags/{tag}"
-    with urllib.request.urlopen(url) as r:  # noqa: S310 - trusted public endpoint
+    tag_quoted = urllib.parse.quote(tag, safe="")
+    url = f"https://api.github.com/repos/{DIC_REPO}/releases/tags/{tag_quoted}"
+    with urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT_SEC) as r:  # noqa: S310
         release = json.loads(r.read().decode("utf-8"))
     asset_url = None
     for a in release.get("assets", []):
@@ -195,7 +285,7 @@ def _download_via_rest(tag: str, asset_name: str, dest: Path) -> None:
             break
     if not asset_url:
         raise RuntimeError(f"asset {asset_name} not found in release {tag}")
-    with urllib.request.urlopen(asset_url) as r, dest.open("wb") as f:  # noqa: S310
+    with urllib.request.urlopen(asset_url, timeout=_DOWNLOAD_TIMEOUT_SEC) as r, dest.open("wb") as f:  # noqa: S310
         shutil.copyfileobj(r, f)
 
 
@@ -290,5 +380,5 @@ def make_analyzer(
             "JTalk dictionary integration is opt-in; "
             "set LIBKURAJI_INTEGRATION=1 to enable."
         )
-    dic_dir = download_dic(tag)
+    dic_dir = download_dic(tag, logwrite=logwrite)
     return JTalkDicAnalyzer(dic_dir, logwrite=logwrite)

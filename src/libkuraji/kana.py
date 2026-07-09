@@ -12,6 +12,8 @@
 import unicodedata
 from typing import List, Tuple
 
+from .limits import enforce_max_input_length
+
 
 def _cell(*dots: int) -> str:
     value = 0
@@ -416,6 +418,7 @@ _KANA2_FIRST = frozenset(key[0] for key in KANA2)
 
 def translate_with_pos(text: str, nabcc: bool = False) -> Tuple[str, List[int]]:
     """Translate kana text into braille; return (cells, input positions)."""
+    enforce_max_input_length(text)
     norm = _normalize(text)
     out: List[str] = []  # cell strings; joined at the end
     pos: List[int] = []  # one entry per cell

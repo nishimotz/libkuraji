@@ -3,6 +3,7 @@
 # License: BSD 3-Clause. See LICENSE.
 
 from .kana import translate_with_pos
+from .limits import InputTooLongError
 
 
 def translate(text: str, nabcc: bool = False) -> str:
@@ -64,4 +65,5 @@ __all__ = [
     "initialize",
     "translate_kanji",
     "terminate",
+    "InputTooLongError",
 ]

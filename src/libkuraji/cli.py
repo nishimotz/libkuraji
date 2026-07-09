@@ -8,6 +8,7 @@ import sys
 from typing import List
 
 from .kana import translate_with_pos
+from .limits import InputTooLongError
 
 
 def has_kanji(text: str) -> bool:
@@ -67,39 +68,43 @@ def main(argv=None) -> int:
     lines = args.text if args.text else (line.rstrip("\n") for line in sys.stdin)
 
     for line in lines:
-        use_kanji = False
-        if args.kanji:
-            use_kanji = True
-        elif not args.kana and has_kanji(line):
-            if has_mecab:
+        try:
+            use_kanji = False
+            if args.kanji:
                 use_kanji = True
+            elif not args.kana and has_kanji(line):
+                if has_mecab:
+                    use_kanji = True
+                else:
+                    print(
+                        "Error: Input contains Kanji but MeCab is not installed. "
+                        "Please run 'pip install libkuraji[integration]' to install it, "
+                        "or use -k/--kana to force kana-only translation.",
+                        file=sys.stderr,
+                    )
+                    return 1
+
+            if use_kanji:
+                from . import translate_kanji
+                # translate_kanji returns (outbuf, inPos, outPos, cursorPos)
+                cells, in_pos, out_pos, _ = translate_kanji(line, nabcc=args.nabcc, unicodeIO=True)
             else:
-                print(
-                    "Error: Input contains Kanji but MeCab is not installed. "
-                    "Please run 'pip install libkuraji[integration]' to install it, "
-                    "or use -k/--kana to force kana-only translation.",
-                    file=sys.stderr,
-                )
-                return 1
+                cells, in_pos = translate_with_pos(line, nabcc=args.nabcc)
+                out_pos = make_out_pos(in_pos, len(line), len(cells))
 
-        if use_kanji:
-            from . import translate_kanji
-            # translate_kanji returns (outbuf, inPos, outPos, cursorPos)
-            cells, in_pos, out_pos, _ = translate_kanji(line, nabcc=args.nabcc, unicodeIO=True)
-        else:
-            cells, in_pos = translate_with_pos(line, nabcc=args.nabcc)
-            out_pos = make_out_pos(in_pos, len(line), len(cells))
-
-        if args.positions:
-            out_data = {
-                "text": line,
-                "braille": cells,
-                "inPos": in_pos,
-                "outPos": out_pos,
-            }
-            print(json.dumps(out_data, ensure_ascii=False))
-        else:
-            print(cells)
+            if args.positions:
+                out_data = {
+                    "text": line,
+                    "braille": cells,
+                    "inPos": in_pos,
+                    "outPos": out_pos,
+                }
+                print(json.dumps(out_data, ensure_ascii=False))
+            else:
+                print(cells)
+        except InputTooLongError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
 
     return 0
 
