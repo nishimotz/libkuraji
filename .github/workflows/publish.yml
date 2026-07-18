@@ -1,0 +1,78 @@
+name: publish
+
+# Trusted Publishing via OIDC (no long-lived API token).
+# Aligned with nishimotz/nextpytk: pushing a v* tag builds and publishes.
+#
+# PyPI pending publisher (https://pypi.org/manage/account/publishing/):
+#   PyPI Project Name:  libkuraji
+#   Owner:              nishimotz
+#   Repository name:    libkuraji
+#   Workflow name:      publish.yml
+#   Environment name:   pypi
+#
+# TestPyPI (https://test.pypi.org/manage/account/publishing/):
+#   same fields, Environment name: testpypi
+#
+# Flow:
+#   git tag v1.0.0rc1 && git push origin v1.0.0rc1  → TestPyPI
+#   git tag v1.0.0    && git push origin v1.0.0     → PyPI
+# Tag without the leading v must match [project].version in pyproject.toml.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      publish_target: ${{ steps.meta.outputs.publish_target }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Resolve publish target
+        id: meta
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver=$(uv run --with packaging python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "$tag" != "$ver" ]; then
+            echo "Tag '$GITHUB_REF_NAME' does not match pyproject version '$ver'"
+            exit 1
+          fi
+          target=$(uv run --with packaging python -c "from packaging.version import Version; print('testpypi' if Version('$tag').is_prerelease else 'pypi')")
+          echo "publish_target=$target" >> "$GITHUB_OUTPUT"
+          echo "Publishing $GITHUB_REF_NAME ($ver) → $target"
+      - name: Build distributions
+        run: uv build
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ needs.build.outputs.publish_target }}
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+      - name: Publish to TestPyPI
+        if: ${{ needs.build.outputs.publish_target == 'testpypi' }}
+        run: uv publish --publish-url https://test.pypi.org/legacy/ --trusted-publishing always
+      - name: Publish to PyPI
+        if: ${{ needs.build.outputs.publish_target == 'pypi' }}
+        run: uv publish --trusted-publishing always
