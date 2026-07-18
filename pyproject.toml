@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libkuraji"
-version = "1.0.0rc1"
+version = "1.0.0"
 description = "Japanese Braille translator originally developed for NVDAJP"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -12,7 +12,7 @@ authors = [{ name = "Takuya Nishimoto" }]
 requires-python = ">=3.10"
 keywords = ["braille", "japanese", "accessibility", "nvda", "mecab"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
