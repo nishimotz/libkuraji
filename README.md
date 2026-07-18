@@ -15,7 +15,7 @@ Translates mixed Kanji/Kana Japanese text into Japanese 6-dot braille (Unicode b
 ## Installation
 
 ```console
-pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
+pip install 'libkuraji[integration]'
 export LIBKURAJI_INTEGRATION=1   # Windows PowerShell: $env:LIBKURAJI_INTEGRATION=1
 ```
 
@@ -24,7 +24,7 @@ On macOS and Homebrew Python, system-wide installs may be restricted. Use a virt
 ```console
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
+pip install 'libkuraji[integration]'
 export LIBKURAJI_INTEGRATION=1
 ```
 

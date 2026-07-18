@@ -15,7 +15,7 @@
 ## インストール
 
 ```console
-pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
+pip install 'libkuraji[integration]'
 export LIBKURAJI_INTEGRATION=1   # Windows PowerShell: $env:LIBKURAJI_INTEGRATION=1
 ```
 
@@ -24,7 +24,7 @@ macOS や Homebrew 版 Python では、システム全体へのインストー�
 ```console
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install 'git+https://github.com/nishimotz/libkuraji.git[integration]'
+pip install 'libkuraji[integration]'
 export LIBKURAJI_INTEGRATION=1
 ```
 
