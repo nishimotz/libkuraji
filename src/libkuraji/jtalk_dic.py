@@ -32,7 +32,10 @@ from typing import Callable, List, Optional
 # Pinned default release tag of libkuraji-jtalk-dic. Override with the
 # LIBKURAJI_JTALK_DIC_TAG environment variable. Bump this when a new
 # dictionary release is validated against the harness.
-DEFAULT_DIC_TAG = "v1.1.7"
+# nvdajp keeps its own build pin in sync with this value: see
+# miscDepsJp/jptools/jtalk-dic-version.txt and tests/unit/test_jpDicPins.py
+# in the nvdajp repository.
+DEFAULT_DIC_TAG = "v1.1.10"
 
 # Owner/repo of the dictionary release.
 DIC_REPO = "nishimotz/libkuraji-jtalk-dic"

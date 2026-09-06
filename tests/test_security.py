@@ -16,7 +16,20 @@ from libkuraji.jtalk_dic import (
     _verify_zip_sha256,
     download_dic,
 )
-from libkuraji.limits import InputTooLongError, enforce_max_input_length
+from libkuraji.limits import (
+    InputTooLongError,
+    enforce_max_input_length,
+    get_max_input_chars,
+)
+
+
+@pytest.fixture(autouse=True)
+def _reset_max_input_chars_cache():
+    # get_max_input_chars is memoized; clear the cache around each test so
+    # tests that mutate LIBKURAJI_MAX_INPUT_CHARS re-read the environment.
+    get_max_input_chars.cache_clear()
+    yield
+    get_max_input_chars.cache_clear()
 
 
 def test_validate_dic_tag_accepts_semver_tags():
