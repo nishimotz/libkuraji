@@ -90,3 +90,17 @@ def test_eng2_grade1(case):
         case["text"], logwrite=_LOG, nabcc=False, use_foreign_quotes=True
     )
     assert braille == case["output"]
+
+
+def test_bullet_braille_pattern():
+    """List bullet (•, U+2022) should map to U+2810 (dot 5) in braille (nvdajp#723)."""
+    for text, expected in [
+        ("•", "⠐"),
+        ("•項目", "⠐ ⠪⠒⠾⠩"),
+        ("• 項目", "⠐ ⠪⠒⠾⠩"),
+        ("• item", "⠐ ⠰⠊⠞⠑⠍"),
+        ("• 1番目", "⠐ ⠼⠁⠐⠥⠴⠿"),
+    ]:
+        braille, inpos, outpos, cursor = translator2.translate(text, unicodeIO=True)
+        assert braille == expected
+
