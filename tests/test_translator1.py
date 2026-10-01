@@ -34,3 +34,25 @@ def test_kana_to_braille(case):
     assert len(result) == len(inpos)
     if "inpos1" in case:
         assert inpos == case["inpos1"]
+
+
+def test_underscore_translation():
+    # Single underscore: dot 5, dots 3-6 (⠐⠤)
+    cells, inpos = translate_with_pos("_")
+    assert cells == "⠐⠤"
+    assert inpos == [0, 0]
+
+    # Underscore in uppercase identifier
+    cells, inpos = translate_with_pos("A_B")
+    assert cells == "⠰⠠⠁⠐⠤⠰⠠⠃"
+    assert inpos == [0, 0, 0, 1, 1, 2, 2, 2]
+
+    # Underscore in lowercase identifier
+    cells, inpos = translate_with_pos("a_b")
+    assert cells == "⠰⠁⠐⠤⠰⠃"
+    assert inpos == [0, 0, 1, 1, 2, 2]
+
+    # Underscore between kana words
+    cells, inpos = translate_with_pos("テスト_テスト")
+    assert "⠐⠤" in cells
+
