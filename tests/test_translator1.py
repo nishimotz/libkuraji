@@ -56,3 +56,30 @@ def test_underscore_translation():
     cells, inpos = translate_with_pos("テスト_テスト")
     assert "⠐⠤" in cells
 
+
+def test_readmejp_symbols():
+    # readmejp.md: |$ 半角ドル |56-1456 |⠰⠹|
+    cells, inpos = translate_with_pos("$")
+    assert cells == "⠰⠹"
+    assert inpos == [0, 0]
+
+    # readmejp.md: || 縦棒 |2356 |⠶|
+    cells, inpos = translate_with_pos("|")
+    assert cells == "⠶"
+    assert inpos == [0]
+
+    # fullwidth vertical bar ｜
+    cells, inpos = translate_with_pos("｜")
+    assert cells == "⠶"
+    assert inpos == [0]
+
+    # readmejp.md: |; 半角セミコロン |23 |⠆|
+    cells, inpos = translate_with_pos(";")
+    assert cells == "⠆"
+    assert inpos == [0]
+
+    # readmejp.md: |\ 半角円 |16 |⠡|
+    cells, inpos = translate_with_pos("\\")
+    assert cells == "⠡"
+    assert inpos == [0]
+
