@@ -104,3 +104,36 @@ def test_bullet_braille_pattern():
         braille, inpos, outpos, cursor = translator2.translate(text, unicodeIO=True)
         assert braille == expected
 
+
+@pytest.mark.parametrize(
+    ("text", "expected_input", "expected_braille"),
+    [
+        # Decimal cases (nvdajp#778)
+        ("年一〇・八％", "トシ 10.8%", "⠞⠳ ⠼⠁⠚⠂⠓⠰⠏"),
+        ("〇・五倍", "0.5バイ", "⠼⠚⠂⠑⠐⠥⠃"),
+        ("一四・二％", "14.2%", "⠼⠁⠙⠂⠃⠰⠏"),
+        ("四七・七％", "47.7%", "⠼⠙⠛⠂⠛⠰⠏"),
+        ("二〇・一％", "20.1%", "⠼⠃⠚⠂⠁⠰⠏"),
+        ("一三・五％", "13.5%", "⠼⠁⠉⠂⠑⠰⠏"),
+        ("一・六％", "1.6%", "⠼⠁⠂⠋⠰⠏"),
+        ("〇・八％", "0.8%", "⠼⠚⠂⠓⠰⠏"),
+        ("〇・〇八％", "0.08%", "⠼⠚⠂⠚⠓⠰⠏"),
+        ("三・〇五％", "3.05%", "⠼⠉⠂⠚⠑⠰⠏"),
+        ("三・五割", "3.5ワリ", "⠼⠉⠂⠑⠄⠓"),
+        ("一・二五倍", "1.25バイ", "⠼⠁⠂⠃⠑⠐⠥⠃"),
+        ("〇・五日", "0.5ニチ", "⠼⠚⠂⠑⠇⠗"),
+        ("三・一四", "3.14", "⠼⠉⠂⠁⠙"),
+        # Non-decimal / repeated numeric sign cases
+        ("七・五・三", "7⠼5⠼3", "⠼⠛⠼⠑⠼⠉"),
+        ("六・三・三制", "6⠼3⠼3セイ", "⠼⠋⠼⠉⠼⠉⠻⠃"),
+        ("二・二六事件", "2⠼26 ジケン", "⠼⠃⠼⠃⠋ ⠐⠳⠫⠴"),
+        ("五・一五事件", "5⠼15 ジケン", "⠼⠑⠼⠁⠑ ⠐⠳⠫⠴"),
+        ("二・三日", "2⠼3ニチ", "⠼⠃⠼⠉⠇⠗"),
+        ("二・三人", "2⠼3ニン", "⠼⠃⠼⠉⠇⠴"),
+    ],
+)
+def test_kansuji_nakaten_decimal(text, expected_input, expected_braille):
+    """Distinguish Kansuji + middle dot decimals from repeated numeric signs (nvdajp#778)."""
+    result, pat, _, _ = translator2.translateWithInPos2(text, logwrite=_LOG, nabcc=False)
+    assert result == expected_input
+    assert pat == expected_braille
