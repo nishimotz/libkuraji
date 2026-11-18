@@ -17089,5 +17089,249 @@
         "text": "二・三人",
         "input": "2⠼3ニン",
         "output": "⠼⠃⠼⠉⠇⠴"
+    },
+    {
+        "comment": "unknown hiragana before choon: にゃんきーず",
+        "text": "にゃんきーず",
+        "input": "ニャンキーズ",
+        "output": "⠈⠅⠴⠣⠒⠐⠹",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            5
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: これはにゃんきーずです。",
+        "text": "これはにゃんきーずです。",
+        "input": "コレワニャンキーズデス。",
+        "output": "⠪⠛⠄⠈⠅⠴⠣⠒⠐⠹⠐⠟⠹⠲",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            8,
+            9,
+            9,
+            10,
+            11
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            10,
+            12,
+            13
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: にゃんきー",
+        "text": "にゃんきー",
+        "input": "ニャンキー",
+        "output": "⠈⠅⠴⠣⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: きゃんきー",
+        "text": "きゃんきー",
+        "input": "キャンキー",
+        "output": "⠈⠡⠴⠣⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: しゃんきー",
+        "text": "しゃんきー",
+        "input": "シャンキー",
+        "output": "⠈⠱⠴⠣⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: ぎゃんきー",
+        "text": "ぎゃんきー",
+        "input": "ギャンキー",
+        "output": "⠘⠡⠴⠣⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: にゃんくー",
+        "text": "にゃんくー",
+        "input": "ニャンクー",
+        "output": "⠈⠅⠴⠩⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
+    },
+    {
+        "comment": "unknown hiragana before choon: にゃんごー",
+        "text": "にゃんごー",
+        "input": "ニャンゴー",
+        "output": "⠈⠅⠴⠐⠪⠒",
+        "inpos": [
+            0,
+            1,
+            2,
+            3,
+            3,
+            4
+        ],
+        "outpos": [
+            0,
+            1,
+            2,
+            3,
+            5
+        ],
+        "inpos2": [
+            0,
+            1,
+            2,
+            3,
+            4
+        ]
     }
 ]
