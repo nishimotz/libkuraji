@@ -137,3 +137,52 @@ def test_kansuji_nakaten_decimal(text, expected_input, expected_braille):
     result, pat, _, _ = translator2.translateWithInPos2(text, logwrite=_LOG, nabcc=False)
     assert result == expected_input
     assert pat == expected_braille
+
+
+def test_mecab_correct_unknown_before_choon():
+    """Do not corrupt preceding known morpheme when unknown word precedes 'ー'."""
+    from libkuraji.mecab_correct import correct_features
+
+    nyanki_lines = [
+        "に,助詞,格助詞,一般,*,*,*,に,ニ,ニ,0/1,動詞%F5/形容詞%F1/名詞%F1",
+        "ゃんき,名詞,一般,*,*,*,*,*",
+        "ー,名詞,一般,*,*,*,*,*",
+    ]
+    assert correct_features(nyanki_lines) == nyanki_lines
+
+    kyanki_lines = [
+        "き,名詞,一般,*,*,*,*,き,キ,キ,1/1,C3",
+        "ゃんき,名詞,一般,*,*,*,*,*",
+        "ー,名詞,一般,*,*,*,*,*",
+    ]
+    assert correct_features(kyanki_lines) == kyanki_lines
+
+    # Known morpheme immediately before 'ー' (Case A) still merges 'ー'
+    ta_lines = [
+        "た,助動詞,*,*,*,特殊・タ,基本形,た,タ,タ,0/1,動詞%F2@1",
+        "ー,名詞,一般,*,*,*,*,*",
+    ]
+    ta_out = correct_features(ta_lines)
+    assert ta_out[0].startswith("たー,助動詞,*,*,*,*,*,たー,ター,ター,")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_input", "expected_braille", "expected_inpos"),
+    [
+        ("にゃんきーず", "ニャンキーズ", "⠈⠅⠴⠣⠒⠐⠹", [0, 1, 2, 3, 4, 5, 5]),
+        ("これはにゃんきーずです。", "コレワニャンキーズデス。", "⠪⠛⠄⠈⠅⠴⠣⠒⠐⠹⠐⠟⠹⠲", [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 9, 10, 11]),
+        ("にゃんきー", "ニャンキー", "⠈⠅⠴⠣⠒", [0, 1, 2, 3, 4]),
+        ("きゃんきー", "キャンキー", "⠈⠡⠴⠣⠒", [0, 1, 2, 3, 4]),
+        ("しゃんきー", "シャンキー", "⠈⠱⠴⠣⠒", [0, 1, 2, 3, 4]),
+        ("ぎゃんきー", "ギャンキー", "⠘⠡⠴⠣⠒", [0, 1, 2, 3, 4]),
+        ("にゃんくー", "ニャンクー", "⠈⠅⠴⠩⠒", [0, 1, 2, 3, 4]),
+        ("にゃんごー", "ニャンゴー", "⠈⠅⠴⠐⠪⠒", [0, 1, 2, 3, 3, 4]),
+    ],
+)
+def test_unknown_hiragana_choon(text, expected_input, expected_braille, expected_inpos):
+    """Unknown hiragana + 'ー' must not corrupt preceding morpheme or cursor positions."""
+    for nabcc in (False, True):
+        result, pat, inpos, _ = translator2.translateWithInPos2(text, logwrite=_LOG, nabcc=nabcc)
+        assert result == expected_input
+        assert pat == expected_braille
+        assert inpos == expected_inpos
